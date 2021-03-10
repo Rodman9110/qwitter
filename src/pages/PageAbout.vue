@@ -1,9 +1,5 @@
 <template>
   <q-page class="q-pa-lg">
-    <!-- <img
-      alt="Quasar logo"
-      src="~assets/quasar-logo-full.svg"
-    > -->
     <h4 class="q-mt-none q-mb-md text-weight-bold">About</h4>
     <div class="text-body1">
       <p>
