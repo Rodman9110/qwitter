@@ -12,7 +12,7 @@
       >
           <template v-slot:before>
             <q-avatar size="xl">
-              <img src="https://cdn.quasar.dev/img/avatar5.jpg">
+              <img src="https://i.pinimg.com/736x/06/b2/32/06b232665f2c2f8aaca7aad013b06fa1.jpg">
             </q-avatar>
           </template>
 
@@ -28,6 +28,7 @@
           <template v-slot:after>
             <!-- <q-btn round dense flat icon="send" /> -->
             <q-btn
+              @click="addNewQweet"
               :disable="!newQweetContent"
               color="primary"
               label="Qweet"
@@ -43,14 +44,21 @@
       <q-separator class="divider" size="10px" color="grey-2"/>
 
       <q-list separator>
+
+        <transition-group
+          appear
+          enter-active-class="animated fadeIn slow"
+          leave-active-class="animated fadeOut slow"
+        >
+
         <q-item 
           v-for="qweet in qweets"
           :key="qweet.date"
-          class="q-py-md"   
+          class="qweet q-py-md"   
         >
           <q-item-section avatar top >
             <q-avatar size="xl">
-              <img src="https://cdn.quasar.dev/img/avatar5.jpg">
+              <img src="https://i.pinimg.com/736x/06/b2/32/06b232665f2c2f8aaca7aad013b06fa1.jpg">
             </q-avatar>
           </q-item-section>
 
@@ -90,6 +98,7 @@
               >
               </q-btn>
               <q-btn
+               @click="deleteQweet(qweet)"
                color="grey"
                icon="fas fa-trash"
                size="sm"
@@ -102,14 +111,19 @@
           
 
           <q-item-section side top>
-            1 min ago
+           {{ qweet.date | relativeDate }}
+           <!-- {{ qweet.date }} -->
           </q-item-section>
         </q-item>
+        </transition-group>
     </q-list>
   </q-page>
 </template>
 
 <script>
+import { formatDistance} from 'date-fns'
+
+
 export default {
   name: 'PageHome',
   data() {
@@ -121,7 +135,7 @@ export default {
           +'de las industrias desde el año 1500, cuando un impresor (N. del T. persona que se dedica a la imprenta) desconocido usó una galería de textos y' 
           +'los mezcló de tal manera que logró hacer un libro de textos especimen. No sólo sobrevivió 500 años, sino que tambien ingresó como texto de relle'
           +' y más recientemente con software de autoedición, como por ejemplo Aldus PageMaker, el cual incluye versiones de Lorem Ipsum.',
-          data: 34252525235123525125
+          date: 1615482401847
 
         },
         {
@@ -129,10 +143,34 @@ export default {
           +'de las industrias desde el año 1500, cuando un impresor (N. del T. persona que se dedica a la imprenta) desconocido usó una galería de textos y' 
           +'los mezcló de tal manera que logró hacer un libro de textos especimen. No sólo sobrevivió 500 años, sino que tambien ingresó como texto de relle'
           +' y más recientemente con software de autoedición, como por ejemplo Aldus PageMaker, el cual incluye versiones de Lorem Ipsum.',
-          data: 54252525235123525125
+          date: 1615482507679
 
-        },
+        }
       ]
+    }
+  },
+  methods:{
+    addNewQweet(){
+      console.log("ddd")
+      let newQweet = {
+        content: this.newQweetContent,
+        date: Date.now(),
+
+      }
+      this.qweets.push(newQweet)
+      this.newQweetContent='';
+    },
+    deleteQweet(qweet){
+     console.log('delete qweet:',qweet);
+     let dateToDelete = qweet.date
+     let index = this.qweets.findIndex(qweet => qweet.date === dateToDelete)
+     this.qweets.splice(index,1)
+
+   } 
+  },
+  filters: {
+    relativeDate(value) {
+      return formatDistance(value, new Date())
     }
   },
 }
@@ -149,6 +187,8 @@ export default {
   border-color: $grey-5
 .qweet-content
   white-space: pre-line
+.qweet:not(:first-child)
+  border-top: 1px solid rgba(0, 0, 0, 0.12)
 .qweet-icons 
   margin-left: -5px
 </style>
