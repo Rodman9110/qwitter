@@ -53,7 +53,7 @@
 
         <q-item 
           v-for="qweet in qweets"
-          :key="qweet.date"
+          :key="qweet.id"
           class="qweet q-py-md"   
         >
           <q-item-section avatar top >
@@ -90,8 +90,9 @@
               >
               </q-btn>
               <q-btn
-               color="grey"
-               icon="far fa-heart"
+               @click="toggledLiked(qweet)"
+               :color="qweet.like ? 'pink' : 'grey'"
+               :icon ="qweet.like ? 'fas fa-heart' : 'far fa-heart'"
                size="sm"
                flat
                round
@@ -122,7 +123,7 @@
 
 <script>
 import { formatDistance} from 'date-fns'
-
+import db from 'src/boot/firebase'
 
 export default {
   name: 'PageHome',
@@ -130,22 +131,26 @@ export default {
     return {
       newQweetContent:'',
       qweets:[
-        {
-          content:'Lorem Ipdfsfsfsdafsadsum es simplemente el texto de relleno de las imprentas y archivos de texto. Lorem Ipsum ha sido el texto de relleno estándar' 
-          +'de las industrias desde el año 1500, cuando un impresor (N. del T. persona que se dedica a la imprenta) desconocido usó una galería de textos y' 
-          +'los mezcló de tal manera que logró hacer un libro de textos especimen. No sólo sobrevivió 500 años, sino que tambien ingresó como texto de relle'
-          +' y más recientemente con software de autoedición, como por ejemplo Aldus PageMaker, el cual incluye versiones de Lorem Ipsum.',
-          date: 1615482401847
+        // {
+        //   id: "ID1",
+        //   content:'Lorem Ipdfsfsfsdafsadsum es simplemente el texto de relleno de las imprentas y archivos de texto. Lorem Ipsum ha sido el texto de relleno estándar' 
+        //   +'de las industrias desde el año 1500, cuando un impresor (N. del T. persona que se dedica a la imprenta) desconocido usó una galería de textos y' 
+        //   +'los mezcló de tal manera que logró hacer un libro de textos especimen. No sólo sobrevivió 500 años, sino que tambien ingresó como texto de relle'
+        //   +' y más recientemente con software de autoedición, como por ejemplo Aldus PageMaker, el cual incluye versiones de Lorem Ipsum.',
+        //   date: 1615482401847,
+        //   like: false
 
-        },
-        {
-          content:'Lorem Ipsum es simplemente el texto de relleno de las imprentas y archivos de texto. Lorem Ipsum ha sido el texto de relleno estándar' 
-          +'de las industrias desde el año 1500, cuando un impresor (N. del T. persona que se dedica a la imprenta) desconocido usó una galería de textos y' 
-          +'los mezcló de tal manera que logró hacer un libro de textos especimen. No sólo sobrevivió 500 años, sino que tambien ingresó como texto de relle'
-          +' y más recientemente con software de autoedición, como por ejemplo Aldus PageMaker, el cual incluye versiones de Lorem Ipsum.',
-          date: 1615482507679
+        // },
+        // {
+        //   id: "ID2",
+        //   content:'Lorem Ipsum es simplemente el texto de relleno de las imprentas y archivos de texto. Lorem Ipsum ha sido el texto de relleno estándar' 
+        //   +'de las industrias desde el año 1500, cuando un impresor (N. del T. persona que se dedica a la imprenta) desconocido usó una galería de textos y' 
+        //   +'los mezcló de tal manera que logró hacer un libro de textos especimen. No sólo sobrevivió 500 años, sino que tambien ingresó como texto de relle'
+        //   +' y más recientemente con software de autoedición, como por ejemplo Aldus PageMaker, el cual incluye versiones de Lorem Ipsum.',
+        //   date: 1615489943418,
+        //   like: true
 
-        }
+        // }
       ]
     }
   },
@@ -155,24 +160,73 @@ export default {
       let newQweet = {
         content: this.newQweetContent,
         date: Date.now(),
+        like: false
 
       }
-      this.qweets.push(newQweet)
+      db.collection("qweets").add(newQweet).then(function(docRef)  {
+          console.log("Document written with ID: ", docRef.id);
+      })
+      .catch((error) => {
+          console.error("Error adding document: ", error);
+      });
+
+      // this.qweets.push(newQweet)
       this.newQweetContent='';
     },
     deleteQweet(qweet){
      console.log('delete qweet:',qweet);
-     let dateToDelete = qweet.date
-     let index = this.qweets.findIndex(qweet => qweet.date === dateToDelete)
-     this.qweets.splice(index,1)
+    //  let dateToDelete = qweet.date
+    //  let index = this.qweets.findIndex(qweet => qweet.date === dateToDelete)
+    //  this.qweets.splice(index,1)
 
-   } 
+     db.collection('qweets').doc(qweet.id).delete().then(function() {
+     console.log("Document successfully deleted!");
+      }).catch((error) => {
+          console.error("Error removing document: ", error);
+      })
+    },
+    toggledLiked(qweet){
+      console.log("like");
+      // Set the "capital" field of the city 'DC'
+      db.collection("qweets").doc(qweet.id).update({
+          like: !qweet.like
+      })
+      .then(() => {
+          console.log("Document successfully updated!")
+      })
+      .catch((error) => {
+          // The document probably doesn't exist.
+          console.error("Error updating document: ", error)
+      })
+    } 
   },
   filters: {
     relativeDate(value) {
       return formatDistance(value, new Date())
     }
   },
+  mounted(){
+    db.collection('qweets').orderBy('date').onSnapshot(snapshot => {
+        snapshot.docChanges().forEach( change =>{
+          let qweetChange = change.doc.data()
+          qweetChange.id = change.doc.id
+            if (change.type === 'added') {
+                console.log('New qweet: ' , qweetChange);
+                this.qweets.unshift(qweetChange)
+            }
+            if (change.type === "modified") {
+                console.log("Modified qweet: ", qweetChange);
+                let index = this.qweets.findIndex(qweet => qweet.id === qweetChange.id)
+                Object.assign(this.qweets[index], qweetChange)
+            }
+            if (change.type === "removed") {
+                console.log("Removed qweet: ", qweetChange);
+                let index = this.qweets.findIndex(qweet => qweet.id === qweetChange.id)
+                this.qweets.splice(index,1)
+            }
+        })
+    })
+  }
 }
 </script>
 
